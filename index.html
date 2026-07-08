@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="sr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- PROMENI: broj indeksa -->
+  <title>IT u senzorskim sistemima 2026</title>
+
+  <!-- Google fontovi (drugačiji od koleginičinog Times/sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body id="top">
+
+  <div id="scrollProgress"></div>
+
+  <!-- ============ ZAGLAVLJE ============ -->
+  <header class="hero">
+    <p class="eyebrow">Merenje · Analiza · Vizualizacija</p>
+    <h1>Informacione tehnologije u senzorskim sistemima</h1>
+    <p class="sub">Prikupljanje i obrada podataka sa senzora</p>
+
+    <!-- animirani talas (potpis stranice) -->
+    <svg class="wave" viewBox="0 0 1200 90" preserveAspectRatio="none" aria-hidden="true">
+      <path id="waveA" d="M0,45 Q150,10 300,45 T600,45 T900,45 T1200,45" />
+    </svg>
+  </header>
+
+  <main>
+
+    <!-- UVOD -->
+    <section class="panel">
+      <p class="lead">Senzori registruju promene iz okruženja, svetlost, zvuk, temperaturu,
+      pritisak i pretvaraju ih u električne ili digitalne signale. Zahvaljujući tome,
+      elektronski sistemi „vide" realni svet i mogu da prilagode svoj rad uslovima u kojima
+      se nalaze. Na ovoj stranici prikazana su merenja prikupljena senzorima i njihova obrada.</p>
+    </section>
+
+    <!-- KARTICE FIRMI (izmeni nazive/linkove/slike po svom izboru) -->
+    <div class="cards">
+      <article class="company">
+        <div class="thumb" style="background-image:url('img/firma1.jpg')">
+          <span class="tag">primena</span>
+        </div>
+        <div class="body">
+          <h3>Interklima</h3>
+          <p>Preduzeće iz Vrnjačke Banje koje se bavi distribucijom prirodnog gasa, gde senzorski sistemi omogućavaju merenje protoka, pritiska i bezbedno praćenje mreže.</p>
+          <a class="btn" href="https://www.interklima.rs/" target="_blank" rel="noopener">Saznaj više</a>
+        </div>
+      </article>
+
+      <article class="company">
+        <div class="thumb" style="background-image:url('img/firma2.jpg')">
+          <span class="tag">primena</span>
+        </div>
+        <div class="body">
+          <h3>Novi Autoprevoz</h3>
+          <p>Autobuska stanica i prevoznik iz Vrnjačke Banje sa dugom tradicijom, gde se senzori koriste za praćenje voznog parka, brojanje putnika i upravljanje saobraćajem.</p>
+          <a class="btn" href="https://www.noviautoprevoz.rs/cir/" target="_blank" rel="noopener">Saznaj više</a>
+        </div>
+      </article>
+    </div>
+
+    <!-- TEKST O PRIMENI -->
+    <section class="panel">
+      <p>U industriji senzorski sistemi omogućavaju automatizaciju proizvodnje, kontrolu
+      kvaliteta i upravljanje skladišnim i logističkim procesima. U medicini se koriste za
+      nadzor vitalnih parametara, dijagnostiku i praćenje toka terapije.</p>
+      <p>Zbog svega toga senzori su danas jedan od nosećih tehnoloških elemenata od
+      industrije i medicine, preko ekologije, do uređaja široke potrošnje. Njihov razvoj
+      direktno podiže efikasnost, udobnost i sigurnost svakodnevnog života.</p>
+    </section>
+
+    <!-- EASYSENSE -->
+    <section class="panel easysense">
+      <img src="img/data.jpg" alt="EasySense uređaj" onerror="this.style.display='none'">
+      <div class="txt">
+        <h2 class="section-title">Uređaj za prikupljanje podataka</h2>
+        <p>Za prikupljanje merenja korišćen je sistem <b>EasySense</b> sa odgovarajućim
+        senzorima povezanim na data logger.</p>
+        <a class="btn teal" href="https://store.data-harvest.co.uk/easysense" target="_blank" rel="noopener">Idi na EasySense</a>
+      </div>
+    </section>
+
+    <!-- MERENJA + CSV -->
+    <section class="panel">
+      <h2 class="section-title">Rezultati merenja</h2>
+      <p><b>Tokom merenja data logger je beležio više parametara: vlažnost, svetlost,
+      pritisak, zvuk i temperaturu.</b> Podrazumevano su prikazana moja merenja
+      (učitana automatski), a ispod možete prevući ili izabrati svoj CSV fajl
+      kako biste videli obradu proizvoljnih podataka.</p>
+
+      <!-- dropzone: klik ILI prevlačenje fajla (nova forica) -->
+      <label class="dropzone" id="dropzone" tabindex="0">
+        <input type="file" id="csvFile" accept=".csv,.CSV">
+        <div><strong>Prevuci CSV ovde</strong> ili klikni da izabereš fajl</div>
+        <div class="hint">podržani su razdvajači „,” i „;”</div>
+      </label>
+      <p id="csvStatus"></p>
+
+      <!-- statistika po senzoru (nova forica) -->
+      <div class="stats" id="stats"></div>
+
+      <!-- kontrola Y ose (Default Range / Min to Max / Zero to Max) -->
+      <div class="axis-control">
+        <label for="yAxisMode">Y osa:</label>
+        <select id="yAxisMode">
+          <option value="default">Default Range</option>
+          <option value="minmax">Min to Max</option>
+          <option value="zeromax">Zero to Max</option>
+        </select>
+      </div>
+
+      <!-- grafik -->
+      <div class="chart-wrap"><canvas id="myChart"></canvas></div>
+
+      <div class="toolbar">
+        <button id="downloadCsvBtn" class="btn">Preuzmi CSV</button>
+        <button id="downloadPngBtn" class="btn ghost">Sačuvaj grafik kao sliku</button>
+      </div>
+
+      <!-- tabela sa podacima -->
+      <div class="table-wrap"><table id="dataTable"></table></div>
+    </section>
+
+    <!-- ANALIZA -->
+    <section class="panel">
+      <h2 class="section-title">Analiza podataka</h2>
+      <p>Očitane vrednosti su posmatrane kroz vreme kako bi se uočili obrasci i tendencije u
+      promenama, uz poseban osvrt na međusobne odnose parametara. To omogućava potpunije
+      razumevanje ponašanja sistema tokom vremena.</p>
+      <p>Na osnovu toga izdvajaju se ključni trenuci u kojima vrednosti značajno odstupaju,
+      informacija koja je važna za unapređenje sistema, detekciju anomalija i donošenje
+      odluka u upravljanju senzorskim sistemima.</p>
+    </section>
+
+    <!-- VIDEO (zameni ID posle /embed/) -->
+    <section class="panel">
+      <h2 class="section-title">Video prilog</h2>
+      <div class="video-wrap">
+        <iframe src="https://www.youtube.com/embed/Us14nUz-UGk" title="Video prilog" allowfullscreen></iframe>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ PODNOŽJE ============ -->
+  <footer>
+    <div class="footer-inner">
+      <div class="who">
+        <p><strong>Student:</strong> Dimitrije Zajić</p>
+        <p><strong>Indeks:</strong> 85/2022</p>
+      </div>
+      <div class="who">
+        <p><strong>Profesor:</strong> Dr Nebojša Mitrović</p>
+        <p><strong>Asistent:</strong> Jelena Orelj</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="http://www.ftn.kg.ac.rs/" target="_blank" rel="noopener" title="Sajt fakulteta">
+          <img src="img/ftn.png" alt="Fakultet" onerror="this.style.display='none'"></a>
+        <span class="spacer"></span>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTopBtn" title="Vrati se na vrh" aria-label="Vrati se na vrh">↑</button>
+
+  <!-- biblioteke (samo PapaParse i Chart.js — bez jQuery/Bootstrap) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="script.js"></script>
+
+</body>
+
+</html>

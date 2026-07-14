@@ -416,15 +416,19 @@ function setupDownloads() {
 
 
   // export SAMO tabele obrađenih podataka (npr. p(t) i slično) — pratimo trenutni
-  // prikaz na grafiku (sekunde ili minuti), tip x(t) format kolona
+  // prikaz na grafiku (sekunde ili minuti) i SAMO trenutno vidljive senzore
   const tableBtn = document.getElementById('downloadTableBtn');
   if (tableBtn) {
     tableBtn.addEventListener('click', () => {
       if (!currentSeries.length || !chart) return;
 
+      // filtriramo samo senzore koji su trenutno UKLJUČENI (vidljivi) na grafiku
+      const visibleSeries = currentSeries.filter((s, i) => chart.isDatasetVisible(i));
+      if (!visibleSeries.length) return;
+
       const xUnitLabel = currentTimeUnit === 'min' ? 'min' : (currentXUnit || 's');
       let csv = (currentXTitle || 'Vreme') + ' [' + xUnitLabel + ']';
-      currentSeries.forEach(s => {
+      visibleSeries.forEach(s => {
         csv += ',' + s.title + (s.unit ? ' [' + s.unit + ']' : '');
       });
       csv += '\n';
@@ -432,7 +436,7 @@ function setupDownloads() {
       const labels = chart.data.labels;
       labels.forEach((lab, i) => {
         csv += lab;
-        currentSeries.forEach(s => {
+        visibleSeries.forEach(s => {
           csv += ',' + (s.values[i] ?? '');
         });
         csv += '\n';

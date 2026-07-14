@@ -2,14 +2,24 @@
    IT u senzorskim sistemima — logika stranice
    - učitava CSV (podrazumevano data/merenja.csv, uz ugrađeni primer kao rezervu)
    - crta grafik (Chart.js v4), tabelu i statistiku po senzoru
-   - drag & drop upload, preuzimanje CSV-a i grafika kao slike
+   - drag & drop upload, preuzimanje CSV-a, tabele i grafika kao slike
    ========================================================= */
 
+
 const CHART_COLORS = ['#ff9900', '#e619b3', '#e60000', '#800000', '#33cc33', '#0033cc', '#845ef7'];
+
 
 let chart = null;
 let currentCSVText = '';
 let currentSeries = [];
+
+/* Vremenska osa: čuvamo sirove vrednosti (u sekundama) da bismo mogli
+   da prebacujemo prikaz sekunde <-> minuti bez ponovnog parsiranja CSV-a */
+let currentTimeUnit = 'sec';
+let currentLabelsSeconds = [];
+let currentXTitle = '';
+let currentXUnit = '';
+
 
 /* Ugrađeni primer — koristi se ako fajl data/merenja.csv nije dostupan
    (npr. kad se stranica otvori lokalno duplim klikom). */
@@ -27,14 +37,17 @@ s,°C,dB,lux,kPa,%,
 9,22.0,38,470,101.23,53,
 10,22.4,41,486,101.29,52`;
 
+
 document.addEventListener('DOMContentLoaded', () => {
   setupUpload();
   setupScroll();
   setupWave();
   setupDownloads();
   setupYAxisControl();
+  setupTimeUnitControl();
   loadDefault();
 });
+
 
 /* ---------- Učitavanje ---------- */
 function loadDefault() {
@@ -45,29 +58,35 @@ function loadDefault() {
     .catch(() => handleCSV(SAMPLE_CSV)); // rezerva
 }
 
+
 function setupUpload() {
   const input = document.getElementById('csvFile');
   const zone = document.getElementById('dropzone');
 
+
   input.addEventListener('change', e => {
     if (e.target.files.length) readFile(e.target.files[0]);
   });
+
 
   // klik na tastaturi (Enter/Space) otvara birač fajlova
   zone.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
   });
 
+
   ['dragenter', 'dragover'].forEach(ev =>
     zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach(ev =>
     zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('drag'); }));
+
 
   zone.addEventListener('drop', e => {
     const file = e.dataTransfer.files[0];
     if (file) readFile(file);
   });
 }
+
 
 function readFile(file) {
   const reader = new FileReader();
@@ -76,7 +95,9 @@ function readFile(file) {
   reader.readAsText(file, 'UTF-8');
 }
 
+
 function setStatus(msg) { document.getElementById('csvStatus').textContent = msg; }
+
 
 /* ---------- Obrada CSV-a ---------- */
 function handleCSV(text) {
@@ -85,7 +106,9 @@ function handleCSV(text) {
   let rows = parsed.data.filter(r => r.some(c => (c ?? '').toString().trim() !== ''));
   if (rows.length < 2) { setStatus('Fajl nema dovoljno podataka.'); return; }
 
+
   const titles = rows[0].map(s => (s || '').toString().trim());
+
 
   // da li je drugi red red sa jedinicama? (uglavnom nenumerički, a treći numerički)
   let units = null, dataStart = 1;
@@ -94,12 +117,20 @@ function handleCSV(text) {
     dataStart = 2;
   }
 
+
   // izbaci "Comment" kolonu ako postoji
   const commentIdx = titles.findIndex(t => /comment|komentar/i.test(t));
+
 
   const dataRows = rows.slice(dataStart);
   const xIndex = 0; // prva kolona = x-osa (npr. vreme)
   const labels = dataRows.map(r => (r[xIndex] ?? '').toString().trim());
+
+  // čuvamo sirove sekunde i naziv/jedinicu x-ose za kasnije prebacivanje sec <-> min
+  currentLabelsSeconds = labels.map(l => toNum(l));
+  currentXTitle = titles[xIndex];
+  currentXUnit = units ? (units[xIndex] || '') : '';
+
 
   // sastavi numeričke serije (dupli nazivi kolona dobijaju redni broj radi jasnoće)
   const series = [];
@@ -114,27 +145,35 @@ function handleCSV(text) {
     series.push({
       title: label,
       unit: units ? (units[c] || '') : '',
-      values
+      values,
+      col: c   // pamtimo originalni indeks kolone da bi boje u tabeli pratile grafik
     });
   }
 
+
   if (!series.length) { setStatus('Nije pronađena nijedna numerička kolona.'); return; }
 
+
   currentSeries = series;
+
 
   setStatus('Učitano uzoraka: ' + dataRows.length + '  ·  senzora: ' + series.length);
   renderStats(series);
   renderChart(labels, series, titles[xIndex], units ? units[xIndex] : '');
-  renderTable(titles, units, dataRows, commentIdx, xIndex);
+  renderTable(titles, units, dataRows, commentIdx, xIndex, series);
+
 
   applyYAxisMode(currentYAxisMode);
+  applyTimeUnitMode(currentTimeUnit);
 }
+
 
 function numericRatio(row) {
   const cells = row.filter(c => (c ?? '').toString().trim() !== '');
   if (!cells.length) return 0;
   return cells.filter(c => toNum(c) !== null).length / cells.length;
 }
+
 
 function toNum(v) {
   if (v === null || v === undefined) return null;
@@ -143,6 +182,7 @@ function toNum(v) {
   const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
+
 
 /* ---------- Statistika po senzoru ---------- */
 function renderStats(series) {
@@ -164,10 +204,12 @@ function renderStats(series) {
   });
 }
 
+
 /* ---------- Grafik ---------- */
 function renderChart(labels, series, xTitle, xUnit) {
   if (chart) chart.destroy();
   const ctx = document.getElementById('myChart').getContext('2d');
+
 
   const datasets = series.map((s, i) => {
     const color = CHART_COLORS[i % CHART_COLORS.length];
@@ -184,6 +226,7 @@ function renderChart(labels, series, xTitle, xUnit) {
       spanGaps: true
     };
   });
+
 
   chart = new Chart(ctx, {
     type: 'line',
@@ -215,7 +258,11 @@ function renderChart(labels, series, xTitle, xUnit) {
         },
         tooltip: {
           callbacks: {
-            title: items => (xTitle || 'x') + ': ' + items[0].label + (xUnit ? ' ' + xUnit : '')
+            // koristi TRENUTNU vremensku jedinicu (sec/min), da tooltip prati X-osu
+            title: items => {
+              const unit = currentTimeUnit === 'min' ? 'min' : (currentXUnit || 's');
+              return (currentXTitle || 'x') + ': ' + items[0].label + ' ' + unit;
+            }
           }
         }
       },
@@ -227,8 +274,10 @@ function renderChart(labels, series, xTitle, xUnit) {
   });
 }
 
+
 /* ---------- Kontrola Y ose (Default Range / Min to Max / Zero to Max) ---------- */
 let currentYAxisMode = 'default';
+
 
 function setupYAxisControl() {
   const select = document.getElementById('yAxisMode');
@@ -238,6 +287,7 @@ function setupYAxisControl() {
     applyYAxisMode(currentYAxisMode);
   });
 }
+
 
 // uzima u obzir SAMO senzore koji su trenutno uključeni (čekirani) u legendi
 function getVisibleValues() {
@@ -252,14 +302,18 @@ function getVisibleValues() {
   return visible.length ? visible : currentSeries.flatMap(s => s.values.filter(v => v !== null));
 }
 
+
 function applyYAxisMode(mode) {
   if (!chart || !currentSeries.length) return;
+
 
   const allValues = getVisibleValues();
   if (!allValues.length) return;
 
+
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
+
 
   if (mode === 'minmax') {
     // Min to Max: osa ide tačno od najmanje do najveće izmerene vrednosti (samo vidljivih senzora)
@@ -275,21 +329,47 @@ function applyYAxisMode(mode) {
     delete chart.options.scales.y.max;
   }
 
+
   chart.update();
 }
 
+
+/* ---------- Kontrola vremenske ose (Sekunde / Minuti) ---------- */
+function setupTimeUnitControl() {
+  const select = document.getElementById('timeUnitMode');
+  if (!select) return;
+  select.addEventListener('change', e => {
+    applyTimeUnitMode(e.target.value);
+  });
+}
+
+
+function applyTimeUnitMode(mode) {
+  if (!chart || !currentLabelsSeconds.length) return;
+  currentTimeUnit = mode;
+
+  const factor = mode === 'min' ? 60 : 1;
+  const unitLabel = mode === 'min' ? 'min' : (currentXUnit || 's');
+
+  chart.data.labels = currentLabelsSeconds.map(v => v === null ? null : round(v / factor));
+  chart.options.scales.x.title.text = currentXTitle + ' [' + unitLabel + ']';
+  chart.update();
+}
+
+
 /* ---------- Tabela ---------- */
-function renderTable(titles, units, dataRows, commentIdx, xIndex) {
+function renderTable(titles, units, dataRows, commentIdx, xIndex, series) {
   const keep = titles.map((_, i) => i).filter(i => i !== commentIdx);
 
-  // mapiraj boje na kolone (isti redosled kao serije na grafiku)
+
+  // boje se dodeljuju TAČNO onim kolonama koje su postale serije na grafiku,
+  // istim redosledom — tako se tabela i grafik uvek poklapaju
+  // (nenumeričke kolone i x-osa ostaju bez boje, isto kao na grafiku)
   const colorMap = {};
-  let colorPos = 0;
-  keep.forEach(i => {
-    if (i === xIndex) return;
-    colorMap[i] = CHART_COLORS[colorPos % CHART_COLORS.length];
-    colorPos++;
+  series.forEach((s, i) => {
+    colorMap[s.col] = CHART_COLORS[i % CHART_COLORS.length];
   });
+
 
   let html = '<thead><tr>';
   keep.forEach(i => {
@@ -298,6 +378,7 @@ function renderTable(titles, units, dataRows, commentIdx, xIndex) {
     html += '<th ' + style + '>' + esc(titles[i]) + '</th>';
   });
   html += '</tr></thead><tbody>';
+
 
   if (units) {
     html += '<tr class="units">';
@@ -308,6 +389,7 @@ function renderTable(titles, units, dataRows, commentIdx, xIndex) {
     });
     html += '</tr>';
   }
+
 
   dataRows.forEach(r => {
     html += '<tr>';
@@ -322,13 +404,45 @@ function renderTable(titles, units, dataRows, commentIdx, xIndex) {
   document.getElementById('dataTable').innerHTML = html;
 }
 
+
 /* ---------- Preuzimanja ---------- */
 function setupDownloads() {
+  // originalni, sirovi CSV fajl (nepromenjen, bez obzira na prikaz sec/min)
   document.getElementById('downloadCsvBtn').addEventListener('click', () => {
     if (!currentCSVText) return;
     const blob = new Blob([currentCSVText], { type: 'text/csv;charset=utf-8;' });
     triggerDownload(URL.createObjectURL(blob), 'merenja_ITSenzori.csv');
   });
+
+
+  // export SAMO tabele obrađenih podataka (npr. p(t) i slično) — pratimo trenutni
+  // prikaz na grafiku (sekunde ili minuti), tip x(t) format kolona
+  const tableBtn = document.getElementById('downloadTableBtn');
+  if (tableBtn) {
+    tableBtn.addEventListener('click', () => {
+      if (!currentSeries.length || !chart) return;
+
+      const xUnitLabel = currentTimeUnit === 'min' ? 'min' : (currentXUnit || 's');
+      let csv = (currentXTitle || 'Vreme') + ' [' + xUnitLabel + ']';
+      currentSeries.forEach(s => {
+        csv += ',' + s.title + (s.unit ? ' [' + s.unit + ']' : '');
+      });
+      csv += '\n';
+
+      const labels = chart.data.labels;
+      labels.forEach((lab, i) => {
+        csv += lab;
+        currentSeries.forEach(s => {
+          csv += ',' + (s.values[i] ?? '');
+        });
+        csv += '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      triggerDownload(URL.createObjectURL(blob), 'tabela_obradjeni_podaci.csv');
+    });
+  }
+
 
   document.getElementById('downloadPngBtn').addEventListener('click', () => {
     if (!chart) return;
@@ -336,11 +450,13 @@ function setupDownloads() {
   });
 }
 
+
 function triggerDownload(href, filename) {
   const a = document.createElement('a');
   a.href = href; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
 }
+
 
 /* ---------- Skrol: traka napretka + dugme na vrh ---------- */
 function setupScroll() {
@@ -353,6 +469,7 @@ function setupScroll() {
   });
   btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
+
 
 /* ---------- Animirani talas u zaglavlju ---------- */
 function setupWave() {
@@ -370,6 +487,7 @@ function setupWave() {
     path.setAttribute('d', d);
   }, 60);
 }
+
 
 /* ---------- Pomoćne ---------- */
 function round(n) { return Math.round(n * 100) / 100; }

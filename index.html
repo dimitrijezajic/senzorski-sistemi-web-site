@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="sr">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -65,6 +64,28 @@
           <a class="btn" href="https://www.noviautoprevoz.rs/cir/" target="_blank" rel="noopener">Saznaj više</a>
         </div>
       </article>
+
+      <article class="company">
+        <div class="thumb" style="background-image:url('img/firma3.jpg')">
+          <span class="tag">REKLAMA</span>
+        </div>
+        <div class="body">
+          <h3>Omniprojekt</h3>
+          <p>Preduzeće iz Vrnjačke Banje koje već 30 godina projektuje i proizvodi automatizovane linije za punjenje i pakovanje, gde senzori kontrolišu nivo doziranja, poravnanje ambalaže i kvalitet proizvodnje u realnom vremenu.</p>
+          <a class="btn" href="https://omniprojekt.co.rs/" target="_blank" rel="noopener">Saznaj više</a>
+        </div>
+      </article>
+
+      <article class="company">
+        <div class="thumb" style="background-image:url('img/firma4.jpg')">
+          <span class="tag">REKLAMA</span>
+        </div>
+        <div class="body">
+          <h3>EcoMax</h3>
+          <p>Preduzeće iz Vrnjačke Banje specijalizovano za digitalno procesiranje signala i sisteme video nadzora, gde senzori za sliku i zvuk omogućavaju detekciju, obradu i prenos podataka u realnom vremenu.</p>
+          <a class="btn" href="http://www.ecomax.rs/" target="_blank" rel="noopener">Saznaj više</a>
+        </div>
+      </article>
     </div>
 
     <!-- TEKST O PRIMENI -->
@@ -83,8 +104,8 @@
       <div class="txt">
         <h2 class="section-title">Uređaj za prikupljanje podataka</h2>
         <p>Za prikupljanje merenja korišćen je sistem <b>EasySense</b> sa odgovarajućim
-        senzorima povezanim na data logger.</p>
-        <a class="btn teal" href="https://store.data-harvest.co.uk/easysense" target="_blank" rel="noopener">Idi na EasySense</a>
+        senzorima povezanim na data logger proizvođača <b>Data Harvest</b>.</p>
+        <a class="btn teal" href="https://store.data-harvest.co.uk/" target="_blank" rel="noopener">Idi na Data Harvest</a>
       </div>
     </section>
 
@@ -115,13 +136,20 @@
           <option value="minmax">Min to Max</option>
           <option value="zeromax">Zero to Max</option>
         </select>
+
+        <label for="timeUnitMode" style="margin-left:16px;">Vremenska osa:</label>
+        <select id="timeUnitMode">
+          <option value="sec">Sekunde</option>
+          <option value="min">Minuti</option>
+        </select>
       </div>
 
       <!-- grafik -->
       <div class="chart-wrap"><canvas id="myChart"></canvas></div>
 
       <div class="toolbar">
-        <button id="downloadCsvBtn" class="btn">Preuzmi CSV</button>
+        <button id="downloadCsvBtn" class="btn">Preuzmi originalni CSV</button>
+        <button id="downloadTableBtn" class="btn">Preuzmi tabelu (obrađeni podaci)</button>
         <button id="downloadPngBtn" class="btn ghost">Sačuvaj grafik kao sliku</button>
       </div>
 
@@ -140,9 +168,20 @@
       odluka u upravljanju senzorskim sistemima.</p>
     </section>
 
-    <!-- VIDEO (zameni ID posle /embed/) -->
+    <!-- VIDEO: dva DataHarvest videa na vrhu, postojeći video na kraju -->
     <section class="panel">
-      <h2 class="section-title">Video prilog</h2>
+      <h2 class="section-title">Video prilozi — Data Harvest</h2>
+
+      <div class="video-wrap">
+        <iframe src="https://www.youtube.com/embed/eACSoQYwplM" title="Data Harvest video 1" allowfullscreen></iframe>
+      </div>
+      <p class="hint" style="margin:10px 0 24px;">Demonstracija merenja trenja pomoću Vu+ data logera i timing rampe — senzori beleže vreme prolaska objekta kroz tačke na rampi radi izračunavanja brzine.</p>
+
+      <div class="video-wrap">
+        <iframe src="https://www.youtube.com/embed/YfymBI6BODg" title="Using the Smart Wireless Fast Response Temperature Sensor" allowfullscreen></iframe>
+      </div>
+      <p class="hint" style="margin:10px 0 24px;">Demonstracija bežičnog temperaturnog senzora sa EasySense2 softverom — praktičan primer merenja.</p>
+
       <div class="video-wrap">
         <iframe src="https://www.youtube.com/embed/Us14nUz-UGk" title="Video prilog" allowfullscreen></iframe>
       </div>
@@ -178,5 +217,4 @@
   <script src="script.js"></script>
 
 </body>
-
 </html>

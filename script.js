@@ -12,6 +12,7 @@ const CHART_COLORS = ['#ff9900', '#e619b3', '#e60000', '#800000', '#33cc33', '#0
 let chart = null;
 let currentCSVText = '';
 let currentSeries = [];
+let tableColumnSeriesIndex = [];
 
 /* Vremenska osa: čuvamo sirove vrednosti (u sekundama) da bismo mogli
    da prebacujemo prikaz sekunde <-> minuti bez ponovnog parsiranja CSV-a */
@@ -254,6 +255,7 @@ function renderChart(labels, series, xTitle, xUnit) {
               legendItem.hidden = false;
             }
             applyYAxisMode(currentYAxisMode);
+            syncTableVisibility();
           }
         },
         tooltip: {
@@ -361,6 +363,13 @@ function applyTimeUnitMode(mode) {
 function renderTable(titles, units, dataRows, commentIdx, xIndex, series) {
   const keep = titles.map((_, i) => i).filter(i => i !== commentIdx);
 
+  // mapiramo redosled kolona u tabeli na odgovarajući indeks senzora na grafiku
+  // (null za x-osu ili nenumeričke kolone koje nisu deo grafika)
+  tableColumnSeriesIndex = keep.map(i => {
+    const idx = series.findIndex(s => s.col === i);
+    return idx === -1 ? null : idx;
+  });
+
 
   // boje se dodeljuju TAČNO onim kolonama koje su postale serije na grafiku,
   // istim redosledom — tako se tabela i grafik uvek poklapaju
@@ -402,6 +411,26 @@ function renderTable(titles, units, dataRows, commentIdx, xIndex, series) {
   });
   html += '</tbody>';
   document.getElementById('dataTable').innerHTML = html;
+
+  syncTableVisibility();
+}
+
+
+// sakriva/prikazuje kolone u tabeli tako da tačno prate koje su serije
+// trenutno uključene (vidljive) na grafiku — poziva se nakon svakog klika na legendu
+function syncTableVisibility() {
+  const table = document.getElementById('dataTable');
+  if (!table || !chart) return;
+  const rows = table.querySelectorAll('tr');
+  rows.forEach(row => {
+    const cells = row.children;
+    tableColumnSeriesIndex.forEach((si, idx) => {
+      if (si === null) return;
+      const cell = cells[idx];
+      if (!cell) return;
+      cell.style.display = chart.isDatasetVisible(si) ? '' : 'none';
+    });
+  });
 }
 
 

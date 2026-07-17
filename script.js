@@ -13,6 +13,7 @@ let chart = null;
 let currentCSVText = '';
 let currentSeries = [];
 let tableColumnSeriesIndex = [];
+let tableTimeColIndex = null;
 
 /* Vremenska osa: čuvamo sirove vrednosti (u sekundama) da bismo mogli
    da prebacujemo prikaz sekunde <-> minuti bez ponovnog parsiranja CSV-a */
@@ -52,11 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ---------- Učitavanje ---------- */
 function loadDefault() {
-  // cache-busting: dodaje se timestamp da bi browser uvek povukao svežu verziju fajla
   fetch('data/merenja.csv?v=' + Date.now())
     .then(r => { if (!r.ok) throw new Error('nema fajla'); return r.text(); })
     .then(text => handleCSV(text))
-    .catch(() => handleCSV(SAMPLE_CSV)); // rezerva
+    .catch(() => handleCSV(SAMPLE_CSV));
 }
 
 
@@ -70,7 +70,6 @@ function setupUpload() {
   });
 
 
-  // klik na tastaturi (Enter/Space) otvara birač fajlova
   zone.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
   });
@@ -111,7 +110,6 @@ function handleCSV(text) {
   const titles = rows[0].map(s => (s || '').toString().trim());
 
 
-  // da li je drugi red red sa jedinicama? (uglavnom nenumerički, a treći numerički)
   let units = null, dataStart = 1;
   if (rows.length > 2 && numericRatio(rows[1]) < 0.5 && numericRatio(rows[2]) >= 0.5) {
     units = rows[1].map(s => (s || '').toString().trim());
@@ -119,27 +117,24 @@ function handleCSV(text) {
   }
 
 
-  // izbaci "Comment" kolonu ako postoji
   const commentIdx = titles.findIndex(t => /comment|komentar/i.test(t));
 
 
   const dataRows = rows.slice(dataStart);
-  const xIndex = 0; // prva kolona = x-osa (npr. vreme)
+  const xIndex = 0;
   const labels = dataRows.map(r => (r[xIndex] ?? '').toString().trim());
 
-  // čuvamo sirove sekunde i naziv/jedinicu x-ose za kasnije prebacivanje sec <-> min
   currentLabelsSeconds = labels.map(l => toNum(l));
   currentXTitle = titles[xIndex];
   currentXUnit = units ? (units[xIndex] || '') : '';
 
 
-  // sastavi numeričke serije (dupli nazivi kolona dobijaju redni broj radi jasnoće)
   const series = [];
   const seenTitles = {};
   for (let c = 0; c < titles.length; c++) {
     if (c === xIndex || c === commentIdx) continue;
     const values = dataRows.map(r => toNum(r[c]));
-    if (values.filter(v => v !== null).length < dataRows.length * 0.5) continue; // preskoči nenumeričku kolonu
+    if (values.filter(v => v !== null).length < dataRows.length * 0.5) continue;
     let label = titles[c] || ('Kolona ' + c);
     seenTitles[label] = (seenTitles[label] || 0) + 1;
     if (seenTitles[label] > 1) label = label + ' (' + seenTitles[label] + ')';
@@ -147,7 +142,7 @@ function handleCSV(text) {
       title: label,
       unit: units ? (units[c] || '') : '',
       values,
-      col: c   // pamtimo originalni indeks kolone da bi boje u tabeli pratile grafik
+      col: c
     });
   }
 
@@ -260,7 +255,6 @@ function renderChart(labels, series, xTitle, xUnit) {
         },
         tooltip: {
           callbacks: {
-            // koristi TRENUTNU vremensku jedinicu (sec/min), da tooltip prati X-osu
             title: items => {
               const unit = currentTimeUnit === 'min' ? 'min' : (currentXUnit || 's');
               return (currentXTitle || 'x') + ': ' + items[0].label + ' ' + unit;
@@ -291,7 +285,6 @@ function setupYAxisControl() {
 }
 
 
-// uzima u obzir SAMO senzore koji su trenutno uključeni (čekirani) u legendi
 function getVisibleValues() {
   if (!chart || !currentSeries.length) return [];
   const visible = [];
@@ -300,7 +293,6 @@ function getVisibleValues() {
       visible.push(...s.values.filter(v => v !== null));
     }
   });
-  // ako je slučajno sve isključeno, vrati sve vrednosti kao rezervu
   return visible.length ? visible : currentSeries.flatMap(s => s.values.filter(v => v !== null));
 }
 
@@ -318,15 +310,12 @@ function applyYAxisMode(mode) {
 
 
   if (mode === 'minmax') {
-    // Min to Max: osa ide tačno od najmanje do najveće izmerene vrednosti (samo vidljivih senzora)
     chart.options.scales.y.min = dataMin;
     chart.options.scales.y.max = dataMax;
   } else if (mode === 'zeromax') {
-    // Zero to Max: osa uvek počinje od nule do najveće vrednosti (samo vidljivih senzora)
     chart.options.scales.y.min = 0;
     chart.options.scales.y.max = dataMax;
   } else {
-    // Default Range: prepusti Chart.js-u da sam izračuna "lep" opseg
     delete chart.options.scales.y.min;
     delete chart.options.scales.y.max;
   }
@@ -356,6 +345,36 @@ function applyTimeUnitMode(mode) {
   chart.data.labels = currentLabelsSeconds.map(v => v === null ? null : round(v / factor));
   chart.options.scales.x.title.text = currentXTitle + ' [' + unitLabel + ']';
   chart.update();
+
+  updateTableTimeColumn();
+}
+
+
+// ažurira vrednosti u koloni "Time" unutar tabele tako da prate izabranu
+// vremensku jedinicu (sekunde ili minuti) — poziva se svaki put kad se promeni izbor
+function updateTableTimeColumn() {
+  const table = document.getElementById('dataTable');
+  if (!table || tableTimeColIndex === null || tableTimeColIndex < 0) return;
+
+  const factor = currentTimeUnit === 'min' ? 60 : 1;
+  const unitLabel = currentTimeUnit === 'min' ? 'min' : (currentXUnit || 's');
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  const rows = tbody.querySelectorAll('tr');
+  let dataRowIndex = 0;
+  rows.forEach(row => {
+    const cell = row.children[tableTimeColIndex];
+    if (!cell) return;
+    if (row.classList.contains('units')) {
+      cell.textContent = unitLabel;
+      return;
+    }
+    const raw = currentLabelsSeconds[dataRowIndex];
+    cell.textContent = raw === null ? '' : round(raw / factor);
+    dataRowIndex++;
+  });
 }
 
 
@@ -363,17 +382,14 @@ function applyTimeUnitMode(mode) {
 function renderTable(titles, units, dataRows, commentIdx, xIndex, series) {
   const keep = titles.map((_, i) => i).filter(i => i !== commentIdx);
 
-  // mapiramo redosled kolona u tabeli na odgovarajući indeks senzora na grafiku
-  // (null za x-osu ili nenumeričke kolone koje nisu deo grafika)
   tableColumnSeriesIndex = keep.map(i => {
     const idx = series.findIndex(s => s.col === i);
     return idx === -1 ? null : idx;
   });
 
+  tableTimeColIndex = keep.indexOf(xIndex);
 
-  // boje se dodeljuju TAČNO onim kolonama koje su postale serije na grafiku,
-  // istim redosledom — tako se tabela i grafik uvek poklapaju
-  // (nenumeričke kolone i x-osa ostaju bez boje, isto kao na grafiku)
+
   const colorMap = {};
   series.forEach((s, i) => {
     colorMap[s.col] = CHART_COLORS[i % CHART_COLORS.length];
@@ -416,8 +432,6 @@ function renderTable(titles, units, dataRows, commentIdx, xIndex, series) {
 }
 
 
-// sakriva/prikazuje kolone u tabeli tako da tačno prate koje su serije
-// trenutno uključene (vidljive) na grafiku — poziva se nakon svakog klika na legendu
 function syncTableVisibility() {
   const table = document.getElementById('dataTable');
   if (!table || !chart) return;
@@ -436,7 +450,6 @@ function syncTableVisibility() {
 
 /* ---------- Preuzimanja ---------- */
 function setupDownloads() {
-  // originalni, sirovi CSV fajl (nepromenjen, bez obzira na prikaz sec/min)
   document.getElementById('downloadCsvBtn').addEventListener('click', () => {
     if (!currentCSVText) return;
     const blob = new Blob([currentCSVText], { type: 'text/csv;charset=utf-8;' });
@@ -444,14 +457,11 @@ function setupDownloads() {
   });
 
 
-  // export SAMO tabele obrađenih podataka (npr. p(t) i slično) — pratimo trenutni
-  // prikaz na grafiku (sekunde ili minuti) i SAMO trenutno vidljive senzore
   const tableBtn = document.getElementById('downloadTableBtn');
   if (tableBtn) {
     tableBtn.addEventListener('click', () => {
       if (!currentSeries.length || !chart) return;
 
-      // filtriramo samo senzore koji su trenutno UKLJUČENI (vidljivi) na grafiku
       const visibleSeries = currentSeries.filter((s, i) => chart.isDatasetVisible(i));
       if (!visibleSeries.length) return;
 

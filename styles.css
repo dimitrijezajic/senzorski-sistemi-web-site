@@ -3,6 +3,7 @@
    Boje i fontovi namerno drugačiji od podrazumevanog Bootstrap izgleda.
    ========================================================= */
 
+
 :root {
   --navy:      #0b1a2b;   /* zaglavlje / podnožje */
   --navy-2:    #12263b;
@@ -21,9 +22,12 @@
   --body:      "Inter", system-ui, -apple-system, sans-serif;
 }
 
+
 * { box-sizing: border-box; }
 
+
 html { scroll-behavior: smooth; }
+
 
 body {
   margin: 0;
@@ -38,6 +42,7 @@ body {
   font-size: 17px;
 }
 
+
 /* traka napretka skrolovanja na vrhu */
 #scrollProgress {
   position: fixed;
@@ -47,6 +52,7 @@ body {
   background: linear-gradient(90deg, var(--accent), var(--accent-3));
   z-index: 100;
 }
+
 
 /* ---------- Zaglavlje sa animiranim talasom ---------- */
 .hero {
@@ -89,6 +95,7 @@ body {
 }
 .wave path { fill: none; stroke: var(--accent-2); stroke-width: 2.5; }
 
+
 /* ---------- Glavni sadržaj ---------- */
 main {
   max-width: 1000px;
@@ -96,6 +103,7 @@ main {
   padding: 0 20px 80px;
   position: relative;
 }
+
 
 .panel {
   background: var(--card);
@@ -106,9 +114,11 @@ main {
   margin-bottom: 26px;
 }
 
+
 .lead { font-size: 1.06rem; color: #33455a; margin: 0; }
 .panel p { color: #3a4c60; }
 .panel p + p { margin-top: 14px; }
+
 
 h2.section-title {
   font-family: var(--display);
@@ -126,6 +136,7 @@ h2.section-title::before {
   border-radius: 3px;
 }
 
+
 /* ---------- Kartice firmi ---------- */
 .cards {
   display: grid;
@@ -133,6 +144,14 @@ h2.section-title::before {
   gap: 20px;
   margin-bottom: 26px;
 }
+
+
+/* tri kartice u jednom redu (Interklima, Omniprojekt, EcoMax) */
+.cards.cards-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+
 .company {
   background: var(--card);
   border: 1px solid var(--line);
@@ -162,6 +181,7 @@ h2.section-title::before {
 .company h3 { font-family: var(--display); margin: 0; font-size: 1.2rem; }
 .company p { margin: 0; color: var(--muted); font-size: .95rem; flex: 1; }
 
+
 .btn {
   display: inline-block;
   align-self: flex-start;
@@ -184,6 +204,7 @@ h2.section-title::before {
 .btn.teal { background: var(--accent-2); }
 .btn.teal:hover { background: #0f9d92; }
 
+
 /* ---------- EasySense traka ---------- */
 .easysense {
   display: flex;
@@ -197,6 +218,7 @@ h2.section-title::before {
 }
 .easysense .txt { flex: 1; min-width: 220px; }
 .easysense h2 { margin-top: 0; }
+
 
 /* ---------- Upload / dropzone ---------- */
 .dropzone {
@@ -213,6 +235,7 @@ h2.section-title::before {
 .dropzone input { display: none; }
 .hint { font-size: .85rem; margin-top: 6px; }
 #csvStatus { font-family: var(--mono); font-size: .85rem; color: var(--accent-2); min-height: 1.2em; margin-top: 10px; }
+
 
 /* ---------- Statistika (nova forica) ---------- */
 .stats {
@@ -231,6 +254,7 @@ h2.section-title::before {
 .stat .name { font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 .stat .big { font-family: var(--display); font-size: 1.5rem; font-weight: 700; margin: 4px 0 2px; }
 .stat .range { font-family: var(--mono); font-size: .78rem; color: var(--muted); }
+
 
 /* ---------- Kontrola Y ose (Default Range / Min to Max / Zero to Max) ---------- */
 .axis-control {
@@ -255,6 +279,7 @@ h2.section-title::before {
 }
 .axis-control select:hover, .axis-control select:focus { border-color: var(--accent); }
 
+
 /* grafik */
 .chart-wrap {
   position: relative;
@@ -267,7 +292,9 @@ canvas#myChart {
   height: 100% !important;
 }
 
+
 .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
 
 /* tabela sa podacima */
 .table-wrap { overflow: auto; max-height: 460px; margin-top: 20px; border: 1px solid var(--line); border-radius: 10px; }
@@ -278,9 +305,21 @@ thead th { background: var(--navy); color: #fff; position: sticky; top: 0; }
 tbody tr.units td { font-style: italic; background: var(--paper); }
 tbody tr:nth-child(even):not(.units) td { background: #fafcfe; }
 
+
 /* video */
 .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; border-radius: var(--radius); overflow: hidden; }
 .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+
+/* ---------- Kompaktan grid za video priloge ---------- */
+.video-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+}
+.video-card { display: flex; flex-direction: column; }
+.video-card .hint { margin: 8px 0 0; }
+
 
 /* ---------- Podnožje ---------- */
 footer {
@@ -298,6 +337,7 @@ footer strong { color: #fff; }
 .footer-links img { height: 54px; width: 54px; object-fit: contain; border-radius: 8px; background: #fff; padding: 6px; }
 .footer-links .spacer { flex: 1; }
 
+
 #scrollTopBtn {
   position: fixed; bottom: 22px; right: 22px;
   background: var(--accent); color: #fff; border: none;
@@ -307,15 +347,25 @@ footer strong { color: #fff; }
 }
 #scrollTopBtn:hover { background: #ff5325; }
 
+
 /* ---------- Responsivno ---------- */
+@media (max-width: 900px) {
+  .cards.cards-3 { grid-template-columns: 1fr 1fr; }
+  .video-grid { grid-template-columns: 1fr 1fr; }
+}
+
+
 @media (max-width: 720px) {
   body { font-size: 16px; background-size: 260px 260px; }
   .cards { grid-template-columns: 1fr; }
+  .cards.cards-3 { grid-template-columns: 1fr; }
+  .video-grid { grid-template-columns: 1fr; }
   .footer-inner { grid-template-columns: 1fr; }
   .panel { padding: 22px 20px; }
   .chart-wrap { height: 300px; }
   .axis-control { flex-wrap: wrap; }
 }
+
 
 /* pristupačnost: fokus i smanjena animacija */
 a:focus-visible, button:focus-visible, .dropzone:focus-visible, .axis-control select:focus-visible {
